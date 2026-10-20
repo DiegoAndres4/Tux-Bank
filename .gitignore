@@ -1,0 +1,13 @@
+# Ignorar dependencias en cualquier subcarpeta
+**/node_modules/
+
+# Ignorar variables de entorno e información confidencial
+**/.env
+**/.env.local
+**/.env.*.local
+
+# Logs y carpetas de build/dist
+*.log
+**/dist/
+**/build/
+.DS_Store
