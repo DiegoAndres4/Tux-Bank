@@ -1,15 +1,15 @@
 import {
-  Body,
   Controller,
   Get,
+  Post,
+  Body,
+  Res,
+  Req,
   HttpCode,
   HttpStatus,
-  Post,
-  Req,
-  Res,
   UseGuards,
 } from '@nestjs/common';
-import type { Response } from 'express';
+import * as express from 'express';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -24,11 +24,11 @@ export class AuthController {
     return this.authService.register(registerDto);
   }
 
-  @Post('login')
   @HttpCode(HttpStatus.OK)
+  @Post('login')
   async login(
     @Body() loginDto: LoginDto,
-    @Res({ passthrough: true }) res: Response,
+    @Res({ passthrough: true }) res: express.Response,
   ) {
     const user = await this.authService.validateUser(loginDto);
     const token = this.authService.generateJwtToken(user);
@@ -36,8 +36,8 @@ export class AuthController {
     res.cookie('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 3600000,
+      sameSite: 'lax',
+      maxAge: 24 * 60 * 60 * 1000,
     });
 
     return {
@@ -51,20 +51,24 @@ export class AuthController {
     };
   }
 
-  @Post('logout')
-  @HttpCode(HttpStatus.OK)
-  async logout(@Res({ passthrough: true }) res: Response) {
-    res.clearCookie('token');
-    return { message: 'Sesión cerrada exitosamente' };
+  @UseGuards(JwtAuthGuard)
+  @Get('me')
+  async me(@Req() req: express.Request) {
+    const user = req.user as { userId: string };
+    return this.authService.getProfile(user.userId);
   }
 
-  // Endpoint protegido para obtener el perfil del usuario autenticado
-  @UseGuards(JwtAuthGuard)
-  @Get('perfil')
-  getProfile(@Req() req: any) {
-    return {
-      message: 'Acceso permitido a ruta protegida',
-      user: req.user,
-    };
+  // Sin guard: el logout es idempotente incluso con la cookie ya expirada
+  @HttpCode(HttpStatus.OK)
+  @Post('logout')
+  logout(@Res({ passthrough: true }) res: express.Response) {
+    res.clearCookie('token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+    });
+
+    return { message: 'Sesión cerrada correctamente' };
   }
 }

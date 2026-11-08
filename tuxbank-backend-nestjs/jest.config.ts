@@ -14,6 +14,9 @@ const config: Config = {
   moduleFileExtensions: ['js', 'json', 'ts'],
   rootDir: '.',
   testRegex: '.*\\.spec\\.ts$',
+  // Los e2e viven en test/ y arrancan un servidor + MongoDB en memoria: se
+  // ejecutan con `npm run test:e2e`, nunca con `npm test`.
+  testPathIgnorePatterns: ['/node_modules/', '<rootDir>/test/'],
   transform: {
     '^.+\\.(t|j)s$': 'ts-jest',
   },
